@@ -265,6 +265,11 @@
 
 /* IoT - internet of things */
 
+#define PKG_USING_WEBCLIENT
+#define WEBCLIENT_USING_SAMPLES
+#define WEBCLIENT_NOT_USE_TLS
+#define PKG_USING_WEBCLIENT_V220
+#define PKG_WEBCLIENT_VER_NUM 0x20200
 
 /* Wi-Fi */
 
