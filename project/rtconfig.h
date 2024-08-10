@@ -443,17 +443,11 @@
 #define PKG_USING_AHT10_LATEST_VERSION
 #define PKG_USING_AP3216C
 #define PKG_USING_AP3216C_LATEST_VERSION
-#define PKG_USING_ICM20608
-#define PKG_USING_ICM20608_LATEST_VERSION
 /* end of sensors drivers */
 
 /* touch drivers */
 
 /* end of touch drivers */
-#define PKG_USING_BEEP
-#define PKG_BEEP_ACTIVE_BUZZER
-#define PKG_BEEP_THREAD_STACK_USING_HEAP
-#define PKG_USING_BEEP_V110
 /* end of peripheral libraries and drivers */
 
 /* AI packages */
@@ -544,14 +538,19 @@
 /* Onboard Peripheral Drivers */
 
 #define BSP_USING_USB_TO_USART
+#define BSP_USING_RS485
+
+/* set rts pin number  */
+
+#define BSP_RS485_RTS_PIN 104
+#define RS485_UART_DEVICE_NAME "uart6"
 #define BSP_USING_SRAM
 #define BSP_USING_ONBOARD_LCD
 #define BSP_USING_ONBOARD_LCD_PWM_BL
 #define BSP_USING_ONBOARD_LED_MATRIX
-#define BSP_USING_SPI_FLASH
+#define BSP_USING_LED_MATRIX_RS485_DEMO
 #define BSP_USING_RW007_WLAN
 #define BSP_USING_AHT21
-#define BSP_USING_AP3216C
 /* end of Onboard Peripheral Drivers */
 
 /* On-chip Peripheral Drivers */
@@ -559,6 +558,7 @@
 #define BSP_USING_GPIO
 #define BSP_USING_UART
 #define BSP_USING_UART1
+#define BSP_USING_UART6
 #define BSP_USING_PWM
 #define BSP_USING_PWM3
 #define BSP_USING_PWM3_CH2
@@ -585,7 +585,6 @@
 
 /* Board extended module Drivers */
 
-#define BSP_USING_TEST
 /* end of Board extended module Drivers */
 /* end of Hardware Drivers Config */
 

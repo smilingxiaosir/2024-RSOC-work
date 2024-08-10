@@ -3,7 +3,7 @@
 #include "mqtt_api.h"
 #include <aht10.h>
 #include <stdlib.h>
-
+#include <cJSON.h>
 char DEMO_PRODUCT_KEY[IOTX_PRODUCT_KEY_LEN + 1] = {0};
 char DEMO_DEVICE_NAME[IOTX_DEVICE_NAME_LEN + 1] = {0};
 char DEMO_DEVICE_SECRET[IOTX_DEVICE_SECRET_LEN + 1] = {0};
@@ -25,20 +25,11 @@ int HAL_Snprintf(char *str, const int len, const char *fmt, ...);
     } while(0)
 
 //定义
-rt_uint32_t temperature;
-char Temperature[2];
 int Temp, Humi;
 #define AHT_I2C_BUS_NAME "i2c3"
 
 rt_thread_t  tid1 = NULL;    //启动MQTT传输的线程
 rt_thread_t  tid2 = NULL;    //获取温湿度的线程
-rt_thread_t  tid3 = NULL;    //接收邮箱中的数据
-static rt_sem_t dynamic_sem1 = RT_NULL;  //创建信号量
-static rt_sem_t dynamic_sem2 = RT_NULL;
-/* 邮箱控制块 */
-static struct rt_mailbox mb;
-/* 用于放邮件的内存池 */
-static char mb_pool[512];
 
 
 static void example_message_arrive(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
@@ -93,17 +84,17 @@ static int example_publish(void *handle)
     const char     *fmt = "/sys/%s/%s/thing/event/property/post";
     char           *topic = NULL;
     int             topic_len = 0;
-    char           *payload = "{\"id\":1722740027879,\"params\":{\"temp\":33,\"hum\":95},\"version\":\"1.0\",\"method\":\"thing.event.property.post\"}";
-    //char           *payload = NULL;
+    char           *payload = NULL;
 
-    // payload = HAL_Malloc(200);
-    // if(payload == NULL)
-    // {
-    //     EXAMPLE_TRACE("memory not enough");
-    //     return -1;
-    // }
-    // memset(payload, 0, 200);
-    // HAL_Snprintf(payload, 200, pay_load, "33");
+    cJSON* root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "id", 1722740027879);
+    cJSON* temper = cJSON_CreateObject();
+    cJSON_AddNumberToObject(temper, "temp", Temp);
+    cJSON_AddNumberToObject(temper, "hum", Humi);
+    cJSON_AddItemToObject(root, "params", temper); 
+    cJSON_AddStringToObject(root, "version", "1.0");
+    cJSON_AddStringToObject(root, "method", "thing.event.property.post");
+    payload = cJSON_Print(root);
 
 
     topic_len = strlen(fmt) + strlen(DEMO_PRODUCT_KEY) + strlen(DEMO_DEVICE_NAME) + 1;
@@ -119,12 +110,12 @@ static int example_publish(void *handle)
     if (res < 0) {
         EXAMPLE_TRACE("publish failed, res = %d", res);
         HAL_Free(topic);
-        // HAL_Free(payload);
+        HAL_Free(payload);
         return -1;
     }
 
     HAL_Free(topic);
-    //HAL_Free(payload);
+    HAL_Free(payload);
     return 0;
 }
 
@@ -182,26 +173,6 @@ static int mqtt_example_main(int argc, char *argv[])
     return 0;
 }
 
-void recv_data(void)
-{
-    rt_sem_take(dynamic_sem2, RT_WAITING_FOREVER);
-    if(rt_mb_recv(&mb, &temperature, RT_WAITING_FOREVER) == RT_EOK)
-    {
-        
-        rt_kprintf(temperature);
-        rt_sem_release(dynamic_sem1);
-    }
-}
-
-void RecvData_Thread(void)
-{
-    tid3 = rt_thread_create("tid3", recv_data, RT_NULL, 2048, 25, 5);
-    if(tid3 != NULL)
-    {
-        rt_thread_startup(tid3);
-    }
-}
-
 
 void MQTT_Thread(void)
 {
@@ -215,9 +186,6 @@ void MQTT_Thread(void)
 void Get_Degree(void *p)
 {
     aht10_device_t AHT = aht10_init(AHT_I2C_BUS_NAME);
-    // rt_mb_init(&mb, "mbt", &mb_pool[0],sizeof(mb_pool) / 4, RT_IPC_FLAG_FIFO);
-    // dynamic_sem2 = rt_sem_create("dynamic_sem2", 0, RT_IPC_FLAG_FIFO);
-    // dynamic_sem1 = rt_sem_create("dynamic_sem1", 0, RT_IPC_FLAG_FIFO);
     while (1)
     {
         Humi = aht10_read_humidity(AHT);
@@ -229,16 +197,12 @@ void Get_Degree(void *p)
         lcd_show_string(20, 150, 24, "HUMIDITY:");
         lcd_show_num(20, 200, (int) Humi, sizeof(Humi), 24);
         lcd_show_string(50, 200, 24 , "%%");
-        // rt_kprintf("Tem: %d\n",Temp);
-        // rt_kprintf("Humi: %d %%\n",Humi);
-        // rt_mb_send(&mb, (uint32_t)Temp);
-        // rt_sem_release(dynamic_sem2);
         rt_thread_mdelay(1000);
     }
     
 }
 
-void get_degree_Thread(void)
+void Temp_Hum_Create_thread(void)
 {
     tid2 = rt_thread_create("tid2", Get_Degree, RT_NULL, 2048, 25, 5);
     if(tid2 != NULL)
@@ -248,5 +212,3 @@ void get_degree_Thread(void)
     
 }
 
-
-MSH_CMD_EXPORT(MQTT_Thread, MQTT_Thread);
